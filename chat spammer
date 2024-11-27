@@ -1,0 +1,158 @@
+-- Settings
+local defaultInterval = 6  -- Default interval in seconds
+local isGuiOpen = true
+local spamInterval = defaultInterval  -- Current interval for spamming
+
+-- Get the local player
+local player = game.Players.LocalPlayer
+local replicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Create the GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Create the main frame for the GUI
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 200)  -- Adjusted size to fit new features
+mainFrame.Position = UDim2.new(0, 10, 0, 100)  -- Position higher up on the screen
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Black background
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(0, 150, 0)  -- Darker green border
+mainFrame.Parent = screenGui
+
+-- Make the frame draggable
+local dragToggle = nil
+local dragSpeed = 0.2
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragToggle = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+mainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragToggle = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Create the TextBox to enter the message
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(1, -20, 0, 30)  -- Make it fill the width of the frame
+textBox.Position = UDim2.new(0, 10, 0, 20)  -- Slight padding
+textBox.PlaceholderText = "Enter message to spam"
+textBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  -- White background
+textBox.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
+textBox.TextSize = 14
+textBox.BorderSizePixel = 2
+textBox.BorderColor3 = Color3.fromRGB(0, 150, 0)  -- Dark green border
+textBox.Parent = mainFrame
+
+-- Create the Button to toggle spamming
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, -20, 0, 30)  -- Same width as the textBox
+toggleButton.Position = UDim2.new(0, 10, 0, 60)  -- Slight padding
+toggleButton.Text = "Start Spamming"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White text
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)  -- Lighter green background
+toggleButton.TextSize = 14
+toggleButton.BorderSizePixel = 2
+toggleButton.BorderColor3 = Color3.fromRGB(0, 120, 0)  -- Darker green border
+toggleButton.Parent = mainFrame
+
+-- Create the "Fix" Button to chat the message "jdsawiodq"
+local fixButton = Instance.new("TextButton")
+fixButton.Size = UDim2.new(1, -20, 0, 30)  -- Same width as the textBox
+fixButton.Position = UDim2.new(0, 10, 0, 100)  -- Slight padding
+fixButton.Text = "Fix"
+fixButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White text
+fixButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)  -- Lighter green background
+fixButton.TextSize = 14
+fixButton.BorderSizePixel = 2
+fixButton.BorderColor3 = Color3.fromRGB(0, 120, 0)  -- Darker green border
+fixButton.Parent = mainFrame
+
+-- Create the TextBox to enter the interval (in seconds)
+local intervalBox = Instance.new("TextBox")
+intervalBox.Size = UDim2.new(1, -20, 0, 30)
+intervalBox.Position = UDim2.new(0, 10, 0, 140)  -- Place below the buttons
+intervalBox.PlaceholderText = "Interval (sec)"
+intervalBox.Text = tostring(defaultInterval)  -- Default interval
+intervalBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  -- White background
+intervalBox.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
+intervalBox.TextSize = 14
+intervalBox.BorderSizePixel = 2
+intervalBox.BorderColor3 = Color3.fromRGB(0, 150, 0)  -- Dark green border
+intervalBox.Parent = mainFrame
+
+-- Variable to track whether the spamming is active
+local isSpamming = false
+local messageToSpam = ""
+
+-- Function to send a message to the global chat
+local function sendMessage()
+    -- Ensure there's a message to spam
+    if messageToSpam ~= "" then
+        -- Send the message to the global chat
+        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(messageToSpam, "All")
+    end
+end
+
+-- Function to toggle the spamming on/off
+local function toggleSpamming()
+    if isSpamming then
+        -- Stop spamming
+        isSpamming = false
+        toggleButton.Text = "Start Spamming"
+    else
+        -- Start spamming
+        isSpamming = true
+        messageToSpam = textBox.Text  -- Get the message from the TextBox
+        toggleButton.Text = "Stop Spamming"
+        
+        -- Get the interval from the interval box and convert to number
+        local newInterval = tonumber(intervalBox.Text)
+        if newInterval and newInterval > 0 then
+            spamInterval = newInterval
+        else
+            spamInterval = defaultInterval  -- Default to the default interval if invalid input
+        end
+        
+        -- Spam the message every few seconds
+        while isSpamming do
+            sendMessage()
+            wait(spamInterval)  -- Delay before sending the next message
+        end
+    end
+end
+
+-- Function to send the "jdsawiodq" message when the Fix button is clicked
+local function sendFixMessage()
+    game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("jdsawiodq", "All")
+end
+
+-- Connect the button clicks to their respective functions
+toggleButton.MouseButton1Click:Connect(toggleSpamming)
+fixButton.MouseButton1Click:Connect(sendFixMessage)
+
+-- Toggle the GUI open/close with right control key
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.RightControl then
+            isGuiOpen = not isGuiOpen
+            mainFrame.Visible = isGuiOpen
+        end
+    end
+end)
